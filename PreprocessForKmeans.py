@@ -31,6 +31,8 @@ dataFiles = [
 savePath = "AllDataDF.csv"
 
 for i in range(len(dataFiles)):
+    terrain = dataFiles[i].split('_')[0][1:]
+    speed = dataFiles[i].split('_s')[1][:2]
 
     df = pd.read_csv(os.path.join(dataFolder, dataFiles[i]))
     df = df.rename(columns={'Unnamed: 0': 'Seq'})
@@ -61,6 +63,8 @@ for i in range(len(dataFiles)):
 
     df = df.iloc[64:].reset_index().drop(columns=['index'])
     df = df.drop(columns=['Sensor', 'Time'])
+    df['Speed']=speed
+    df['Terrain']=terrain
 
     if i==0:
         mainDf = df.copy(deep=True)
