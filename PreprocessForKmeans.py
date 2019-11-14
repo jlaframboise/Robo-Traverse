@@ -25,7 +25,25 @@ dataFiles = [
     r"gTurf_s05_t2.csv",
     r"gTurf_s10_t1.csv",
     r"gTurf_s10_t2.csv",
-    r"gTurf_s15_t1.csv"
+    r"gTurf_s15_t1.csv",
+
+    r"gArcTile_s15_t1.csv",
+    r"gArcTile_s15_t2.csv",
+    r"gArcTile_s20_t1.csv",
+    r"gArcTile_s20_t2.csv",
+    r"gCarp_s05_t1.csv",
+    r"gCarp_s05_t2.csv",
+    r"gCarp_s10_t1.csv",
+    r"gCarp_s10_t2.csv",
+    r"gCarp_s15_t1.csv",
+    r"gCarp_s15_t2.csv",
+    r"gCarp_s20_t1.csv",
+    r"gCarp_s20_t2.csv",
+    r"gArcTile_s05_t1.csv",
+    r"gArcTile_s05_t2.csv",
+    r"gArcTile_s10_t1.csv",
+    r"gArcTile_s10_t2.csv"
+
 ]
 
 savePath = "AllDataDF.csv"
