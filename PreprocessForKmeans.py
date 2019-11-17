@@ -46,7 +46,7 @@ dataFiles = [
 
 ]
 
-savePath = "AllDataDF.csv"
+savePath = "AllDataDFDelta26.csv"
 
 for i in range(len(dataFiles)):
     terrain = dataFiles[i].split('_')[0][1:]
@@ -56,12 +56,12 @@ for i in range(len(dataFiles)):
     df = df.rename(columns={'Unnamed: 0': 'Seq'})
     df = df.set_index('Seq')
 
-    print(df.isnull().sum().sum())
+    #print(df.isnull().sum().sum())
     df = df.interpolate(method='polynomial', order=1)
-    print(df.isnull().sum().sum())
+    #print(df.isnull().sum().sum())
 
     df = df.dropna()
-    print(df.isnull().sum().sum())
+    #print(df.isnull().sum().sum())
     df = df.reset_index().drop(columns=['Seq'])
 
     df = df.drop(columns=['OdomPosZ', 'OdomOrientX', 'OdomOrientY', 'OdomLinY', 'OdomLinZ', 'OdomAngX', 'OdomAngY'])
@@ -70,16 +70,19 @@ for i in range(len(dataFiles)):
         deltaCol = pd.Series([ col.iloc[i] - col.iloc[i-delta] if i>=delta else 0 for i in range(len(col))])
         return deltaCol
 
-    dList = [2,4,8,16,32,64]
+    seedList = range(1,10)
+    dList = [2**x for x in seedList]
+    dList = range(1, 302, 10)
+    #dList = [2,4,8,16,32,64, 128, 256, 512, 1024, 2048, 4096, 8192]
     for col in df.columns.tolist():
         if col!='Sensor':
             for d in dList:
                 df[col+'Delta{}'.format(d)] = getDeltaCol(df[col], d)
-                print('Added ' + col +'Delta{}'.format(d))
+                #print('Added ' + col +'Delta{}'.format(d))
         else:
             print('Skipped sensor')
 
-    df = df.iloc[64:].reset_index().drop(columns=['index'])
+    df = df.iloc[max(dList):].reset_index().drop(columns=['index'])
     df = df.drop(columns=['Sensor', 'Time'])
     df['Speed']=speed
     df['Terrain']=terrain
