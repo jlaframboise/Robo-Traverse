@@ -67,16 +67,12 @@ for i in range(len(dataFiles)):
 
     df = df.drop(columns=['OdomPosZ', 'OdomOrientX', 'OdomOrientY', 'OdomLinY', 'OdomLinZ', 'OdomAngX', 'OdomAngY'])
 
-    def getDeltaCol(col,delta):
-        deltaCol = pd.Series([ col.iloc[i] - col.iloc[i-delta] if i>=delta else 0 for i in range(len(col))])
-        return deltaCol
-
     dList = range(1, 302, 10)
     # dList = [2,4,8,16,32,64]
     for col in df.columns.tolist():
         if col!='Sensor':
             for d in dList:
-                df[col+'Delta{}'.format(d)] = getDeltaCol(df[col], d)
+                df[col+'Delta{}'.format(d)] = df[col].diff(d)
                 #print('Added ' + col +'Delta{}'.format(d))
         else:
             print('Skipped sensor')
