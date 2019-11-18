@@ -46,11 +46,12 @@ dataFiles = [
 
 ]
 
-savePath = "AllDataDFDelta26.csv"
+savePath = "AllDataDFDelta30.csv"
 
 for i in range(len(dataFiles)):
     terrain = dataFiles[i].split('_')[0][1:]
     speed = dataFiles[i].split('_s')[1][:2]
+    trial = dataFiles[i].split('_t')[1][0]
 
     df = pd.read_csv(os.path.join(dataFolder, dataFiles[i]))
     df = df.rename(columns={'Unnamed: 0': 'Seq'})
@@ -70,10 +71,8 @@ for i in range(len(dataFiles)):
         deltaCol = pd.Series([ col.iloc[i] - col.iloc[i-delta] if i>=delta else 0 for i in range(len(col))])
         return deltaCol
 
-    seedList = range(1,10)
-    dList = [2**x for x in seedList]
     dList = range(1, 302, 10)
-    #dList = [2,4,8,16,32,64, 128, 256, 512, 1024, 2048, 4096, 8192]
+    # dList = [2,4,8,16,32,64]
     for col in df.columns.tolist():
         if col!='Sensor':
             for d in dList:
@@ -86,6 +85,7 @@ for i in range(len(dataFiles)):
     df = df.drop(columns=['Sensor', 'Time'])
     df['Speed']=speed
     df['Terrain']=terrain
+    df['Trial']=trial
 
     if i==0:
         mainDf = df.copy(deep=True)
