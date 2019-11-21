@@ -46,7 +46,7 @@ dataFiles = [
 
 ]
 
-savePath = "AllDataDFDelta30.csv"
+savePath = "AllDataDFDelta30Squared.csv"
 
 for i in range(len(dataFiles)):
     terrain = dataFiles[i].split('_')[0][1:]
@@ -73,6 +73,7 @@ for i in range(len(dataFiles)):
         if col!='Sensor':
             for d in dList:
                 df[col+'Delta{}'.format(d)] = df[col].diff(d)
+                df[col+'Delta{}Squared'.format(d)] = df[col+'Delta{}'.format(d)]**2
                 #print('Added ' + col +'Delta{}'.format(d))
         else:
             print('Skipped sensor')
