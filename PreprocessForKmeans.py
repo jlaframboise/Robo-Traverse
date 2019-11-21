@@ -7,46 +7,44 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-dataFolder = r"C:\Users\jaker\Documents\RoboData-Experiment1"
+dataFolder = r"C:\Users\jaker\Documents\Experiment3Data-2019-11-21"
 
 dataFiles = [
-    r"gTurf_s15_t2.csv",
-    r"gTurf_s20_t1.csv",
-    r"gTurf_s20_t2.csv",
-    r"gMitTile_s05_t1.csv",
-    r"gMitTile_s05_t2.csv",
-    r"gMitTile_s10_t1.csv",
-    r"gMitTile_s10_t2.csv",
-    r"gMitTile_s15_t1.csv",
-    r"gMitTile_s15_t2.csv",
-    r"gMitTile_s20_t1.csv",
-    r"gMitTile_s20_t2.csv",
-    r"gTurf_s05_t1.csv",
-    r"gTurf_s05_t2.csv",
-    r"gTurf_s10_t1.csv",
-    r"gTurf_s10_t2.csv",
-    r"gTurf_s15_t1.csv",
-
-    r"gArcTile_s15_t1.csv",
-    r"gArcTile_s15_t2.csv",
-    r"gArcTile_s20_t1.csv",
-    r"gArcTile_s20_t2.csv",
-    r"gCarp_s05_t1.csv",
-    r"gCarp_s05_t2.csv",
-    r"gCarp_s10_t1.csv",
-    r"gCarp_s10_t2.csv",
-    r"gCarp_s15_t1.csv",
-    r"gCarp_s15_t2.csv",
-    r"gCarp_s20_t1.csv",
-    r"gCarp_s20_t2.csv",
-    r"gArcTile_s05_t1.csv",
-    r"gArcTile_s05_t2.csv",
-    r"gArcTile_s10_t1.csv",
-    r"gArcTile_s10_t2.csv"
-
+    r"gMitTile_s15_t8.csv",
+    r"gMitTile_s15_t9.csv",
+    r"gMitTile_s15_t10.csv",
+    r"gTurf_s15_t3.csv",
+    r"gTurf_s15_t4.csv",
+    r"gTurf_s15_t5.csv",
+    r"gTurf_s15_t6.csv",
+    r"gTurf_s15_t7.csv",
+    r"gTurf_s15_t8.csv",
+    r"gTurf_s15_t9.csv",
+    r"gTurf_s15_t10.csv",
+    r"gArcTile_s15_t3.csv",
+    r"gArcTile_s15_t4.csv",
+    r"gArcTile_s15_t5.csv",
+    r"gArcTile_s15_t6.csv",
+    r"gArcTile_s15_t7.csv",
+    r"gArcTile_s15_t8.csv",
+    r"gArcTile_s15_t9.csv",
+    r"gArcTile_s15_t10.csv",
+    r"gCarp_s15_t3.csv",
+    r"gCarp_s15_t4.csv",
+    r"gCarp_s15_t5.csv",
+    r"gCarp_s15_t6.csv",
+    r"gCarp_s15_t7.csv",
+    r"gCarp_s15_t8.csv",
+    r"gCarp_s15_t9.csv",
+    r"gCarp_s15_t10.csv",
+    r"gMitTile_s15_t3.csv",
+    r"gMitTile_s15_t4.csv",
+    r"gMitTile_s15_t5.csv",
+    r"gMitTile_s15_t6.csv",
+    r"gMitTile_s15_t7.csv"
 ]
 
-savePath = "AllDataDFDelta30Squared.csv"
+savePath = "Data-32Series-Delta30-Squared.csv"
 
 for i in range(len(dataFiles)):
     terrain = dataFiles[i].split('_')[0][1:]
@@ -76,7 +74,7 @@ for i in range(len(dataFiles)):
                 df[col+'Delta{}Squared'.format(d)] = df[col+'Delta{}'.format(d)]**2
                 #print('Added ' + col +'Delta{}'.format(d))
         else:
-            print('Skipped sensor')
+            pass
 
     df = df.iloc[max(dList):].reset_index().drop(columns=['index'])
     df = df.drop(columns=['Sensor', 'Time'])
@@ -89,6 +87,7 @@ for i in range(len(dataFiles)):
     else:
         mainDf = pd.concat([mainDf, df], axis=0, sort=False)
     print("Added {} of size {} to mainDf. ".format(dataFiles[i], df.shape))
+    print("Data series completed: {}/{}".format(i+1,len(dataFiles)))
     print("MainDf is now size {}".format(mainDf.shape))
     print('\n')
 
