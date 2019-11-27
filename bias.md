@@ -16,3 +16,6 @@ This folder analyzes potential sources of error and provides recommendation on h
 3. Furthering the pattern seen in points 1 and 2 remove any non-delta values from the dataset to prevent any ML/NN from creating an identifier based on positional data.
 4. Removing velocity may create more of a focus on other features and create better seperation.
 
+### Updates
+5. Zeroed and collected magnitude of the x and y odom position to remove leaving an ID
+  - Dropped odom X and Y data
