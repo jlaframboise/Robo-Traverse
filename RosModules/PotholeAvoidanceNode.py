@@ -9,6 +9,8 @@ y_robot = 0.0
 theta_robot = 0.0
 robot_width = 0.5   #TODO: set value
 
+pothole_in_frame = False
+
 def newOdom(msg):
     global x_robot
     global y_robot
@@ -19,6 +21,20 @@ def newOdom(msg):
 
     rot_q = msg.pose.pose.orientation
     (roll, pitch, theta_robot) = euler_from_quaternion([rot_q.x, rot_q.y, rot_q.z, rot_q.w])
+
+def check_pothole(msg):
+    global pothole_in_frame
+
+    pothole_in_frame = msg.
+
+def update_box(msg):
+    if (pothole_in_frame):
+        global pothole_box
+
+        pothole_box.x1 = msg.
+        pothole_box.y1 = msg.
+        pothole_box.x2 = msg.
+        pothole_box.y2 = msg.
 
 rospy.init_node("avoidance_controller")
 
@@ -36,12 +52,12 @@ avoidance_point = Point()
 velocity.linear.x = 0.5
 
 while not rospy.is_shutdown():
-     if(classifer_sub):
-        if(x_robot > box_sub.x1 and x_robot < box_sub.x2):  #TODO: adjust for robot width  
-            avoidance_point.x = box_sub.x2 + robot_width
-            avoidance_point.y = box_sub.y2 + robot_width
+     if(pothole_in_frame):
+        if(x_robot > pothole_box.x1 and x_robot < pothole_box.x2):  #TODO: adjust for robot width  
+            avoidance_point.x = pothole_box.x2 + robot_width
+            avoidance_point.y = pothole_box.y2 + robot_width
 
-            while ((x_robot + robot_width) < box_sub.x2):
+            while ((x_robot + robot_width) < pothole_box.x2):
                 d_x = avoidance_point.x - x_robot                    
                 d_y = avoidance_point.y - y_robot
                 goal_angle = atan2(d_x, d_y)
