@@ -33,7 +33,7 @@ while not rospy.is_shutdown():
         snapshot_x = x_robot
         snapshot_y = y_robot
 
-        right = 0.25
+        right = 0.26
         left = -0.255
         bottom = 1
         length = 0.4
@@ -136,13 +136,27 @@ while not rospy.is_shutdown():
             pub.publish(velocity)
             r.sleep()
 
-        # STOP
         velocity.angular.z=0
         velocity.linear.x=0
         velocity.linear.y=0
         pub.publish(velocity)
         r.sleep()
         print("finish")
+
+        # ROTATE BACK
+        target_rad = (snapshot + 6) % 6 - 3
+        while abs(yaw - target_rad)>0.05:
+            command.angular.z = kp * (target_rad-yaw)
+            pub.publish(command)
+            r.sleep()
+            print("Edge is {} bottom is {}".format(edge, bottom))
+            print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomEdge, yaw))
+    
+        velocity.angular.z=0
+        velocity.linear.x=0
+        velocity.linear.y=0
+        pub.publish(velocity)
+        r.sleep()
 
         break
         print("This should never print")
