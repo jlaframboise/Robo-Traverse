@@ -33,32 +33,40 @@ while not rospy.is_shutdown():
         snapshot_x = x_robot
         snapshot_y = y_robot
 
+        right = 0.25
         left = -0.255
         bottom = 1
+        length = 0.4
 
-        # add cushioning to value
-
-
-        angleToBottomLeft = math.atan2(left, bottom)
+        if (abs(left) < abs(right)):
+             # add cushioning to value
+            edge = -left + 0.25
+        else:
+            edge = -right - 0.25
+        
+           
+        angleToBottomEdge = math.atan2(edge, bottom)
 
         # angleToBottomLeft = 45 * math.pi / 180
-        distance = math.sqrt(left**2 + bottom **2)
+        distance = math.sqrt(edge**2 + bottom **2)
         
         # target_rad = angleToBottomLeft + snapshot
-        target_rad = angleToBottomLeft + snapshot
+        target_rad = angleToBottomEdge + snapshot
         
         # if target_rad>3:
         #     target_rad -= 6
         # if target_rad < -3:
         #     target_rad -= 6
         velocity = Twist()
-        # this turn the robot
+        
+        
+        # INITIAL TURN
         while abs(yaw - target_rad)>0.05:
             command.angular.z = kp * (target_rad-yaw)
             pub.publish(command)
             r.sleep()
-            print("Left is {} bottom is {}".format(left, bottom))
-            print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomLeft, yaw))
+            print("Edge is {} bottom is {}".format(edge, bottom))
+            print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomEdge, yaw))
     
         velocity.angular.z=0
         velocity.linear.x=0
@@ -73,27 +81,27 @@ while not rospy.is_shutdown():
             pub.publish(velocity)
             r.sleep()
 
-
         velocity.angular.z=0
         velocity.linear.x=0
         velocity.linear.y=0
         pub.publish(velocity)
         r.sleep()
         print("Stopped")
-        target_rad = snapshot - angleToBottomLeft
+
+        # FRONT EDGE OF POTHOLE
+
+        target_rad = snapshot
         while abs(yaw - target_rad)>0.05:
             command.angular.z = kp * (target_rad-yaw)
             pub.publish(command)
             r.sleep()
             print("Left is {} bottom is {}".format(left, bottom))
-            print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomLeft, yaw))
+            print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomEdge, yaw))
         
-        snapshot_x2 = x_robot
-        snapshot_y2 = y_robot
-
-
+        snapshot_x = x_robot
+        snapshot_y = y_robot
         print("Moving forward")
-        while ((x_robot-snapshot_x2)**2 + (y_robot-snapshot_y2)**2 < distance**2):
+        while ((x_robot-snapshot_x)**2 + (y_robot-snapshot_y)**2 < length**2):
             velocity.linear.x = 0.2
             pub.publish(velocity)
             r.sleep()
@@ -103,17 +111,45 @@ while not rospy.is_shutdown():
         velocity.linear.y=0
         pub.publish(velocity)
         r.sleep()
+
+        # BACK EDGE OF POTHOLE
+
+        target_rad = snapshot  - angleToBottomEdge
+        while abs(yaw - target_rad)>0.05:
+            command.angular.z = kp * (target_rad-yaw)
+            pub.publish(command)
+            r.sleep()
+            print("Edge is {} bottom is {}".format(edge, bottom))
+            print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomEdge, yaw))
+    
+        velocity.angular.z=0
+        velocity.linear.x=0
+        velocity.linear.y=0
+        pub.publish(velocity)
+        r.sleep()
+
+        snapshot_x = x_robot
+        snapshot_y = y_robot
+        print("Moving forward")
+        while ((x_robot-snapshot_x)**2 + (y_robot-snapshot_y)**2 < distance**2):
+            velocity.linear.x = 0.2
+            pub.publish(velocity)
+            r.sleep()
+
+        # STOP
+        velocity.angular.z=0
+        velocity.linear.x=0
+        velocity.linear.y=0
+        pub.publish(velocity)
+        r.sleep()
         print("finish")
 
         break
         print("This should never print")
-
         velocity = Twist()
         velocity.linear.x = 0.5
         pub.publish(velocity)
         r.sleep()
-
-
 
 
 # plan
