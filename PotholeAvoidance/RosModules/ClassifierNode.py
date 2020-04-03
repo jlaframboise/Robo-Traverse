@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+"""
+A ROS module that will subscribe to the raspberry pi camera 
+and publish a boolean flag 0 or 1 indicating the presence of
+a pothole in frame. 
+"""
+
 import sys, time, math, os
 
 import numpy as np
@@ -19,19 +25,23 @@ from tensorflow.keras.models import *
 from tensorflow.keras.optimizers import *
 from tensorflow.keras.utils import *
 from tensorflow.keras.backend import set_session
-
 from sklearn.model_selection import train_test_split
 
 
 
 class image_processor:
     def __init__(self):
+        """
+        A constructor for an object that will subscribe to the
+        relevant topics and apply processing. 
+        """
         self.pub = rospy.Publisher("/output/image_raw/classify",
             CompressedImage, queue_size=5)
 
         self.sub = rospy.Subscriber("/raspicam_node/image/compressed",
             CompressedImage, self.callback, queue_size=5)
         
+        # make tensorflow resources available 
         self.session = tf.Session()
         self.graph = tf.get_default_graph()
         with self.graph.as_default():
@@ -40,8 +50,7 @@ class image_processor:
                 self.model = load_model('classification_01.h5')
                 print("Loaded model...")
 
-        # self.model = myModel
-        
+        # images will be resized
         self.size = (128, 128)
 
         print(self.model.summary())
@@ -53,9 +62,9 @@ class image_processor:
 
         image = cv2.resize(image, self.size)
         image = np.expand_dims(image, axis=0)
-        print("Image: ")
-        print(type(image))
-        print(image.shape)
+        # print("Image: ")
+        # print(type(image))
+        # print(image.shape)
         
 
         # run our model on the image
@@ -64,8 +73,8 @@ class image_processor:
                 [result] = self.model.predict(image)
             # set_session(sess)
             # predictions = self.model.predict(image)
-        print("Made some predictions...")
-        print("Reducing image dim...")
+        # print("Made some predictions...")
+        # print("Reducing image dim...")
         image = image[0]
         print(image.shape)
         colour = (0, 0, 255)
@@ -91,13 +100,7 @@ class image_processor:
 
 
 def main(args):
-
-    # global sess
-    # global graph
-    
-    # global graph 
-    # graph = tf.get_default_graph()
-
+    # start the ros node
     ip = image_processor()
     rospy.init_node('image_processor', anonymous=True)
     try:

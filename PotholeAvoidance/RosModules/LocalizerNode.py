@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+"""
+A ROS module that will subscribe to the raspberry pi camera 
+and apply a CNN which will regress a bounding box locating
+the pothole in an image from the camera. It will output 
+graphical results and publish the bounding box coordinates.  
+"""
+
 import sys, time, math, os
 
 import numpy as np
@@ -26,13 +33,17 @@ from sklearn.model_selection import train_test_split
 
 class image_processor:
     def __init__(self):
+        # load camera calibration
         self.cameraCal = np.load('calibrationmatrix0206.npy')
+
+        # start the publisher and subscribers
         self.pub = rospy.Publisher("/output/image_raw/compressed",
             CompressedImage, queue_size=5)
 
         self.sub = rospy.Subscriber("/raspicam_node/image/compressed",
             CompressedImage, self.callback, queue_size=5)
         
+        # make tensorflow available
         self.session = tf.Session()
         self.graph = tf.get_default_graph()
         with self.graph.as_default():
@@ -41,7 +52,6 @@ class image_processor:
                 self.model = load_model('model_2020-01-30_19-11-26.h5')
                 print("Loaded model...")
 
-        # self.model = myModel
         
         self.size = (128, 128)
 
@@ -54,9 +64,9 @@ class image_processor:
 
         image = cv2.resize(image, self.size)
         image = np.expand_dims(image, axis=0)
-        print("Image: ")
-        print(type(image))
-        print(image.shape)
+        # print("Image: ")
+        # print(type(image))
+        # print(image.shape)
         
 
         # run our model on the image
@@ -65,10 +75,10 @@ class image_processor:
                 [[x,y,w,h]] = self.model.predict(image)
             # set_session(sess)
             # predictions = self.model.predict(image)
-        print("Made some predictions...")
-        print("Reducing image dim...")
+        # print("Made some predictions...")
+        # print("Reducing image dim...")
         image = image[0]
-        print(image.shape)
+        # print(image.shape)
         colour = (0, 0, 255)
         thickness = 2
 
