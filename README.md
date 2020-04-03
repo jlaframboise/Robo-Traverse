@@ -1,15 +1,21 @@
 # Robo-Traverse
 
+### Jacob Laframboise, Jack Demeter, Jesse MacCormac, Daniella Ruisendaal, Anne Broughton
+
+
+
 ## Intro ##
-The QMIND DAIR-Imaging team focuses on the development of an image-based traversal algorithm to determine the viability for a Turtle3Bot to traverse a given path (straight infront). Traversibility is measure using IMU data provided on board the robot with the intention that a neural network will be able to determine the smoothest, and thus most traversable path to take.
+The QMIND DAIR Robotic Traversal Team works towards understanding and improving robotic traversal over terrain. We take a two pronged approach to traversability, by (I) modelling IMU sensor data as a Turtlebot3 robot traverses different terrains, and (II) by developing an autonomous pothole avoidance system on a Turtlebot3 robot.
 
-It is expected that the results of this project could be applied alongside additional pathing algorithms and sensors for a robot to determine the smoothest path between any two arbitrary points.
+## I. Sensor data exploration
 
-## Objectives ##
-The team is concentrated on determining the four main points below:
-1. Collection of data and development of a complete dataset: Collecting IMU and positioning data from the robot along numerous material surfaces.
-2. Clustering and experimentation: Examination of datasets to determine patterns and correlations, along with disguishing and eliminating sources of bias prior to testing.
-3. Neural network training: Training a convolutional neural network to take on board camera data to predict the IMU results of a given material or the traversibility.
-4. Implementation: Executing the neural network alongside a simple traversal algorithm that determines the ideal direction of travel for the robot.
+Using data recorded of a Turtlebot3 Waffle Pi driving over several different surfaces, we do exploratory data analysis to validate assumptions and learn the distribution of the sensor data. We then attempt to cluster and classify the data by which surface the robot was driving on. We use classical machine learning methods such as logistic regression, as well as deep learning methods such as LSTM networks to map the sensor data to which surface the robot is driving on. 
 
-#### Written by Jack Demeter ####
+## II. Autonomous Pothole Avoidance
+
+We focus on the discrete event of driving over a pothole; more specifically how to automatically avoid doing so. We developed a set of linked components for the Turtlebot3 Waffle Pi on the Robot Operating System to:
+1. Identify if a pothole is present in frame
+2. Localize where the pothole is in frame
+3. Map the pixel output to world coordinates
+4. Avoid the pothole
+
