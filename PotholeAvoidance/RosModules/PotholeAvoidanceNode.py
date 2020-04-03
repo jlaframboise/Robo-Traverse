@@ -1,76 +1,193 @@
 import rospy
 from nav_msgs.msg import Odometry
-from tf.transformations import euler_from_quaternion
-from geometry_msgs.msg import Point, Twist
-from math import atan2
-
-x_robot = 0.0
-y_robot = 0.0
-theta_robot = 0.0
-robot_width = 0.5   #TODO: set value
-
-pothole_in_frame = False
-
-def newOdom(msg):
-    global x_robot
-    global y_robot
-    global theta_robot
-
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
+from geometry_msgs.msg import Twist
+import math
+ 
+roll = pitch = yaw = 0.0
+target = 45
+kp=0.5
+ 
+def get_rotation (msg):
+    global roll, pitch, yaw, x_robot, y_robot
+    orientation_q = msg.pose.pose.orientation
+    orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
+    (roll, pitch, yaw) = euler_from_quaternion (orientation_list)
     x_robot = msg.pose.pose.position.x
     y_robot = msg.pose.pose.position.y
+    #   print yaw
+ 
+rospy.init_node('pothole_avoid')
+ 
+sub = rospy.Subscriber ('/odom', Odometry, get_rotation)
+pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
+r = rospy.Rate(10)
+command =Twist()
 
-    rot_q = msg.pose.pose.orientation
-    (roll, pitch, theta_robot) = euler_from_quaternion([rot_q.x, rot_q.y, rot_q.z, rot_q.w])
 
-def check_pothole(msg):
-    global pothole_in_frame
-
-    pothole_in_frame = msg.
-
-def update_box(msg):
-    if (pothole_in_frame):
-        global pothole_box
-
-        pothole_box.x1 = msg.
-        pothole_box.y1 = msg.
-        pothole_box.x2 = msg.
-        pothole_box.y2 = msg.
-
-rospy.init_node("avoidance_controller")
-
-odom_sub = rospy.Subscriber("/odometry/filtered", Odometry, newOdom)
-classifer_sub = rospy.Subscriber()
-box_sub = rospy.Subscriber()
-vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size = 1)
-
-velocity = Twist()
-
-r = rospy.Rate(4)
-
-avoidance_point = Point()
-
-velocity.linear.x = 0.5
 
 while not rospy.is_shutdown():
-     if(pothole_in_frame):
-        if(x_robot > pothole_box.x1 and x_robot < pothole_box.x2):  #TODO: adjust for robot width  
-            avoidance_point.x = pothole_box.x2 + robot_width
-            avoidance_point.y = pothole_box.y2 + robot_width
+    # assume we have a pothole
+    if yaw!=0:
+        snapshot = yaw
+        snapshot_x = x_robot
+        snapshot_y = y_robot
 
-            while ((x_robot + robot_width) < pothole_box.x2):
-                d_x = avoidance_point.x - x_robot                    
-                d_y = avoidance_point.y - y_robot
-                goal_angle = atan2(d_x, d_y)
+        right = 0.26
+        left = -0.255
+        bottom = 1
+        length = 0.4
 
-                if abs(goal_angle - theta_robot) > 0.1:
-                    velocity.angular.z = 0.3
-                else:
-                    velocity.angular.z = 0.0
+        if (abs(left) < abs(right)):
+             # add cushioning to value
+            edge = -left + 0.25
+        else:
+            edge = -right - 0.25
+        
+           
+        angleToBottomEdge = math.atan2(edge, bottom)
 
-                vel_pub.publish(velocity)
-                r.sleep()
-            while abs(theta_robot) > 0.1:
-                velocity.angular.z = -0.3
+        # angleToBottomLeft = 45 * math.pi / 180
+        distance = math.sqrt(edge**2 + bottom **2)
+        
+        # target_rad = angleToBottomLeft + snapshot
+        target_rad = angleToBottomEdge + snapshot
+        
+        # if target_rad>3:
+        #     target_rad -= 6
+        # if target_rad < -3:
+        #     target_rad -= 6
+        velocity = Twist()
+        
+        
+        # INITIAL TURN
+        while abs(yaw - target_rad)>0.05:
+            command.angular.z = kp * (target_rad-yaw)
+            pub.publish(command)
+            r.sleep()
+            print("Edge is {} bottom is {}".format(edge, bottom))
+            print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomEdge, yaw))
+    
+        velocity.angular.z=0
+        velocity.linear.x=0
+        velocity.linear.y=0
+        pub.publish(velocity)
+        r.sleep()
+        print("Stopped rotating...")
 
-                r.sleep()
-                vel_pub.publish(velocity)
+        print("Moving forward")
+        while ((x_robot-snapshot_x)**2 + (y_robot-snapshot_y)**2 < distance**2):
+            velocity.linear.x = 0.2
+            pub.publish(velocity)
+            r.sleep()
+
+        velocity.angular.z=0
+        velocity.linear.x=0
+        velocity.linear.y=0
+        pub.publish(velocity)
+        r.sleep()
+        print("Stopped")
+
+        # FRONT EDGE OF POTHOLE
+
+        target_rad = snapshot
+        while abs(yaw - target_rad)>0.05:
+            command.angular.z = kp * (target_rad-yaw)
+            pub.publish(command)
+            r.sleep()
+            print("Left is {} bottom is {}".format(left, bottom))
+            print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomEdge, yaw))
+        
+        snapshot_x = x_robot
+        snapshot_y = y_robot
+        print("Moving forward")
+        while ((x_robot-snapshot_x)**2 + (y_robot-snapshot_y)**2 < length**2):
+            velocity.linear.x = 0.2
+            pub.publish(velocity)
+            r.sleep()
+
+        velocity.angular.z=0
+        velocity.linear.x=0
+        velocity.linear.y=0
+        pub.publish(velocity)
+        r.sleep()
+
+        # BACK EDGE OF POTHOLE
+
+        target_rad = snapshot  - angleToBottomEdge
+        while abs(yaw - target_rad)>0.05:
+            command.angular.z = kp * (target_rad-yaw)
+            pub.publish(command)
+            r.sleep()
+            print("Edge is {} bottom is {}".format(edge, bottom))
+            print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomEdge, yaw))
+    
+        velocity.angular.z=0
+        velocity.linear.x=0
+        velocity.linear.y=0
+        pub.publish(velocity)
+        r.sleep()
+
+        snapshot_x = x_robot
+        snapshot_y = y_robot
+        print("Moving forward")
+        while ((x_robot-snapshot_x)**2 + (y_robot-snapshot_y)**2 < distance**2):
+            velocity.linear.x = 0.2
+            pub.publish(velocity)
+            r.sleep()
+
+        velocity.angular.z=0
+        velocity.linear.x=0
+        velocity.linear.y=0
+        pub.publish(velocity)
+        r.sleep()
+        print("finish")
+
+        # ROTATE BACK
+        target_rad = (snapshot + 6) % 6 - 3
+        while abs(yaw - target_rad)>0.05:
+            command.angular.z = kp * (target_rad-yaw)
+            pub.publish(command)
+            r.sleep()
+            print("Edge is {} bottom is {}".format(edge, bottom))
+            print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomEdge, yaw))
+    
+        velocity.angular.z=0
+        velocity.linear.x=0
+        velocity.linear.y=0
+        pub.publish(velocity)
+        r.sleep()
+
+        break
+        print("This should never print")
+        velocity = Twist()
+        velocity.linear.x = 0.5
+        pub.publish(velocity)
+        r.sleep()
+
+
+# plan
+"""
+Classifier sees pothole
+then gets boudning box from localizer
+robot stops after stable prediction
+
+convert to coords relative to robot
+find bottom left corner
+(Here we insert hardcoded location of pothole for testing)
+find angle to bottom left corner from robot - tan-1(x/y)
+get current orientation -- save snapshot
+
+add angle to orientation (turn)
+use the rotate to target code
+now we are facing the right direction
+drive forward for sqrt(x^2+y^2)
+
+then do the opposite -- rotate back
+rotate back to: snapshot - tan-1(x/y)
+drive forward sqrt(x^2+y^2)
+
+turn back to snapshot angle
+we have avoided the pothole -- continue
+
+"""
