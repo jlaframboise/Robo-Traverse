@@ -18,6 +18,7 @@ import roslib
 import rospy
 
 from sensor_msgs.msg import CompressedImage
+from std_msgs.msg import Bool
 
 import tensorflow as tf
 from tensorflow.keras.layers import *
@@ -29,14 +30,14 @@ from sklearn.model_selection import train_test_split
 
 
 
-class image_processor:
+class pothole_classifier:
     def __init__(self):
         """
         A constructor for an object that will subscribe to the
         relevant topics and apply processing. 
         """
-        self.pub = rospy.Publisher("/output/image_raw/classify",
-            CompressedImage, queue_size=5)
+        self.pub = rospy.Publisher("chatter",
+            Bool, queue_size=5)
 
         self.sub = rospy.Subscriber("/raspicam_node/image/compressed",
             CompressedImage, self.callback, queue_size=5)
@@ -47,7 +48,7 @@ class image_processor:
         with self.graph.as_default():
             with self.session.as_default():
                 print("Got the graph and session...")
-                self.model = load_model('classification_01.h5')
+                self.model = load_model('classification_model_2020-03-05_23-00-40demo.h5')
                 print("Loaded model...")
 
         # images will be resized
@@ -75,10 +76,10 @@ class image_processor:
             # predictions = self.model.predict(image)
         # print("Made some predictions...")
         # print("Reducing image dim...")
-        image = image[0]
-        print(image.shape)
-        colour = (0, 0, 255)
-        thickness = 2
+        # image = image[0]
+        # print(image.shape)
+        # colour = (0, 0, 255)
+        # thickness = 2
 
         print("Model output: ", result)
         
@@ -89,24 +90,17 @@ class image_processor:
         #     cv2.putText(image, "no", (10,10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
 
         # output
-        msg = CompressedImage()
-        msg.header.stamp = rospy.Time.now()
-        msg.format = "jpeg"
-        msg.data = np.array(cv2.imencode('.jpg', image)[1]).tostring()
-
-        self.pub.publish(msg)
-
-        print("real point", realPts)
+        self.pub.publish(result)
 
 
 def main(args):
     # start the ros node
-    ip = image_processor()
-    rospy.init_node('image_processor', anonymous=True)
+    pc = pothole_classifier()
+    rospy.init_node('pothole_classifier', anonymous=True)
     try:
         rospy.spin()
     except KeyboardInterrupt:
-        print ("Shutting down pothole localizer node")
+        print ("Shutting down pothole classifier node")
     cv2.destroyAllWindows()
 
 if __name__ == '__main__':

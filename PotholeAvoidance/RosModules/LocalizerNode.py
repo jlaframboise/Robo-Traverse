@@ -19,6 +19,7 @@ import roslib
 import rospy
 
 from sensor_msgs.msg import CompressedImage
+from std_msgs.msg import Bool
 
 import tensorflow as tf
 from tensorflow.keras.layers import *
@@ -34,7 +35,7 @@ from sklearn.model_selection import train_test_split
 class image_processor:
     def __init__(self):
         # load camera calibration
-        self.cameraCal = np.load('calibrationmatrix0206.npy')
+        self.cameraCal = np.load('CalibrationMatrix-02-29.npy')
 
         # start the publisher and subscribers
         self.pub = rospy.Publisher("/output/image_raw/compressed",
@@ -42,6 +43,9 @@ class image_processor:
 
         self.sub = rospy.Subscriber("/raspicam_node/image/compressed",
             CompressedImage, self.callback, queue_size=5)
+
+        self.classifier_sub = rospy.Subscriber('chatter', Bool, self.check_pothole)
+
         
         # make tensorflow available
         self.session = tf.Session()
@@ -49,7 +53,7 @@ class image_processor:
         with self.graph.as_default():
             with self.session.as_default():
                 print("Got the graph and session...")
-                self.model = load_model('model_2020-01-30_19-11-26.h5')
+                self.model = load_model('model_2020-03-05_21-40-27-demo1.h5')
                 print("Loaded model...")
 
         
@@ -57,68 +61,71 @@ class image_processor:
 
         print(self.model.summary())
         
+    def check_pothole(self, pothole_data):
+        self.pothole_present = pothole_data.data
+
     def callback(self, ros_data):
         # input
         arr = np.fromstring(ros_data.data, np.uint8)
         image = cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
-        image = cv2.resize(image, self.size)
+        image = cv2.resize(image, self.size) / 255.0
         image = np.expand_dims(image, axis=0)
         # print("Image: ")
         # print(type(image))
         # print(image.shape)
         
 
-        # run our model on the image
-        with self.graph.as_default():
-            with self.session.as_default():
-                [[x,y,w,h]] = self.model.predict(image)
-            # set_session(sess)
-            # predictions = self.model.predict(image)
-        # print("Made some predictions...")
-        # print("Reducing image dim...")
-        image = image[0]
-        # print(image.shape)
-        colour = (0, 0, 255)
-        thickness = 2
+        if(self.pothole_present):
+            # run our model on the image
+            with self.graph.as_default():
+                with self.session.as_default():
+                    [[x,y,w,h]] = self.model.predict(image)
+                # set_session(sess)
+                # predictions = self.model.predict(image)
+            print("Made some predictions...")
+            print("Reducing image dim...")
+            image = image[0] * 255.0
+            print(image.shape)
+            colour = (0, 0, 255)
+            thickness = 1
 
-        print("Model output")
-        print((x,y,w,h))
+            print("Model output")
+            print((x,y,w,h))
 
-        x = 0.1
-        y = 0.7
-        w = 0.4
-        h = 0.1
+            # scale output to pixels from ratios
+            x = int(x*self.size[0])
+            y = int(y*self.size[1])
+            w = int(w*self.size[0])
+            h = int(h*self.size[1])
 
-        x = int(x*self.size[0])
-        y = int(y*self.size[0])
-        w = int(w*self.size[0])
-        h = int(h*self.size[0])
+            print("Scaled output")
+            print((x,y,w,h))
 
-        print("Scaled output")
-        print((x,y,w,h))
+            cv2.rectangle(image, (x,y), (x+w,y+h), colour, thickness)
 
-        cv2.rectangle(image, (x,y), (x+w,y+h), colour, thickness)
+            # to scale points to what is required as input for cameraCal
+            x = x*5
+            y = y*3.75
+            w = w*5
+            h = h*3.75
 
-        # to scale points to what is required as input for cameraCal
-        x = x*5
-        y = y*3.75
-        w = w*5
-        h = h*3.75
+            # convert bounding box to real world points
+            a = np.array([
+                        [x, y],
+                        [x+w, y+h], 
+                        ], dtype='float32')
+            # a = np.array([[436, 295], [185, 296], [400, 279], [220, 280], [314, 286], [470, 279], [149, 281],
+            #      [519, 297], [45, 297], [134, 383], [545, 381], [468, 332], [200, 332], 
+            #      [328, 277], [461, 288], [145, 293], [248, 311], [379, 360]], dtype='float32')
+            a = np.array([a])
+            realPts = cv2.perspectiveTransform(a, self.cameraCal)
 
-        # convert bounding box to real world points
-        a = np.array([
-                     [x, y],
-                     [x+w, y+h], 
-                     ], dtype='float32')
-        # a = np.array([[13, 477], [640, 480], [101, 331],[225, 332], [347, 335], 
-        #       [478, 336], [611, 339], [189, 300], [268, 301], [350, 302], 
-        #       [435, 304], [524, 305], [107, 286], [168, 286], [228, 286], 
-        #       [290, 286], [351, 288], [415, 287], [480, 288], [545, 289]], dtype='float32')
-        a = np.array([a])
-        realPts = cv2.perspectiveTransform(a, self.cameraCal)
-        realPts = realPts*0.0254
-
+            print("real point", realPts)
+            
+        else:
+            image = image[0] * 255.0
+            print("No pothole")
         # output
         msg = CompressedImage()
         msg.header.stamp = rospy.Time.now()
@@ -127,16 +134,8 @@ class image_processor:
 
         self.pub.publish(msg)
 
-        print("real point", realPts)
-
 
 def main(args):
-
-    # global sess
-    # global graph
-    
-    # global graph 
-    # graph = tf.get_default_graph()
 
     ip = image_processor()
     rospy.init_node('image_processor', anonymous=True)

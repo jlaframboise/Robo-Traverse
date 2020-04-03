@@ -1,3 +1,13 @@
+#!/usr/bin/env python
+
+"""
+A ROS module that will take input from a pothole classifier 
+and a pothole localizer, along with input from the odometer
+to send output to the wheels to avoid a detected pothole. 
+See the bottom of the file for an outline of the 
+avoidance stratagy.  
+"""
+
 import rospy
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
@@ -26,145 +36,152 @@ command =Twist()
 
 
 
-while not rospy.is_shutdown():
-    # assume we have a pothole
-    if yaw!=0:
-        snapshot = yaw
-        snapshot_x = x_robot
-        snapshot_y = y_robot
+try:
+    while not rospy.is_shutdown():
+        # assume we have a pothole
+        if yaw!=0:
+            snapshot = yaw
+            snapshot_x = x_robot
+            snapshot_y = y_robot
 
-        right = 0.26
-        left = -0.255
-        bottom = 1
-        length = 0.4
+            right = 0.26
+            left = -0.255
+            bottom = 1
+            length = 0.5
 
-        if (abs(left) < abs(right)):
-             # add cushioning to value
-            edge = -left + 0.25
-        else:
-            edge = -right - 0.25
-        
-           
-        angleToBottomEdge = math.atan2(edge, bottom)
+            if (abs(left) < abs(right)):
+                # add cushioning to value
+                edge = -left + 0.25
+            else:
+                edge = -right - 0.25
+            
+            
+            angleToBottomEdge = math.atan2(edge, bottom)
 
-        # angleToBottomLeft = 45 * math.pi / 180
-        distance = math.sqrt(edge**2 + bottom **2)
+            # angleToBottomLeft = 45 * math.pi / 180
+            distance = math.sqrt(edge**2 + bottom **2)
+            
+            # target_rad = angleToBottomLeft + snapshot
+            target_rad = angleToBottomEdge + snapshot
+            
+            # if target_rad>3:
+            #     target_rad -= 6
+            # if target_rad < -3:
+            #     target_rad -= 6
+            velocity = Twist()
+            
+            
+            # INITIAL TURN
+            while abs(yaw - target_rad)>0.05:
+                command.angular.z = kp * (target_rad-yaw)
+                pub.publish(command)
+                r.sleep()
+                print("Edge is {} bottom is {}".format(edge, bottom))
+                print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomEdge, yaw))
         
-        # target_rad = angleToBottomLeft + snapshot
-        target_rad = angleToBottomEdge + snapshot
-        
-        # if target_rad>3:
-        #     target_rad -= 6
-        # if target_rad < -3:
-        #     target_rad -= 6
-        velocity = Twist()
-        
-        
-        # INITIAL TURN
-        while abs(yaw - target_rad)>0.05:
-            command.angular.z = kp * (target_rad-yaw)
-            pub.publish(command)
+            velocity.angular.z=0
+            velocity.linear.x=0
+            velocity.linear.y=0
+            pub.publish(velocity)
             r.sleep()
-            print("Edge is {} bottom is {}".format(edge, bottom))
-            print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomEdge, yaw))
-    
-        velocity.angular.z=0
-        velocity.linear.x=0
-        velocity.linear.y=0
-        pub.publish(velocity)
-        r.sleep()
-        print("Stopped rotating...")
+            print("Stopped rotating...")
 
-        print("Moving forward")
-        while ((x_robot-snapshot_x)**2 + (y_robot-snapshot_y)**2 < distance**2):
-            velocity.linear.x = 0.2
+            print("Moving forward")
+            while ((x_robot-snapshot_x)**2 + (y_robot-snapshot_y)**2 < distance**2):
+                velocity.linear.x = 0.2
+                pub.publish(velocity)
+                r.sleep()
+
+            velocity.angular.z=0
+            velocity.linear.x=0
+            velocity.linear.y=0
+            pub.publish(velocity)
+            r.sleep()
+            print("Stopped")
+
+            # FRONT EDGE OF POTHOLE
+
+            target_rad = snapshot
+            while abs(yaw - target_rad)>0.05:
+                command.angular.z = kp * (target_rad-yaw)
+                pub.publish(command)
+                r.sleep()
+                print("Left is {} bottom is {}".format(left, bottom))
+                print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomEdge, yaw))
+            
+            snapshot_x = x_robot
+            snapshot_y = y_robot
+            print("Moving forward")
+            while ((x_robot-snapshot_x)**2 + (y_robot-snapshot_y)**2 < length**2):
+                velocity.linear.x = 0.2
+                pub.publish(velocity)
+                r.sleep()
+
+            velocity.angular.z=0
+            velocity.linear.x=0
+            velocity.linear.y=0
             pub.publish(velocity)
             r.sleep()
 
-        velocity.angular.z=0
-        velocity.linear.x=0
-        velocity.linear.y=0
-        pub.publish(velocity)
-        r.sleep()
-        print("Stopped")
+            # BACK EDGE OF POTHOLE
 
-        # FRONT EDGE OF POTHOLE
-
-        target_rad = snapshot
-        while abs(yaw - target_rad)>0.05:
-            command.angular.z = kp * (target_rad-yaw)
-            pub.publish(command)
-            r.sleep()
-            print("Left is {} bottom is {}".format(left, bottom))
-            print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomEdge, yaw))
+            target_rad = snapshot  - angleToBottomEdge
+            while abs(yaw - target_rad)>0.05:
+                command.angular.z = kp * (target_rad-yaw)
+                pub.publish(command)
+                r.sleep()
+                print("Edge is {} bottom is {}".format(edge, bottom))
+                print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomEdge, yaw))
         
-        snapshot_x = x_robot
-        snapshot_y = y_robot
-        print("Moving forward")
-        while ((x_robot-snapshot_x)**2 + (y_robot-snapshot_y)**2 < length**2):
-            velocity.linear.x = 0.2
+            velocity.angular.z=0
+            velocity.linear.x=0
+            velocity.linear.y=0
             pub.publish(velocity)
             r.sleep()
 
-        velocity.angular.z=0
-        velocity.linear.x=0
-        velocity.linear.y=0
-        pub.publish(velocity)
-        r.sleep()
+            snapshot_x = x_robot
+            snapshot_y = y_robot
+            print("Moving forward")
+            while ((x_robot-snapshot_x)**2 + (y_robot-snapshot_y)**2 < distance**2):
+                velocity.linear.x = 0.2
+                pub.publish(velocity)
+                r.sleep()
 
-        # BACK EDGE OF POTHOLE
-
-        target_rad = snapshot  - angleToBottomEdge
-        while abs(yaw - target_rad)>0.05:
-            command.angular.z = kp * (target_rad-yaw)
-            pub.publish(command)
+            velocity.angular.z=0
+            velocity.linear.x=0
+            velocity.linear.y=0
+            pub.publish(velocity)
             r.sleep()
-            print("Edge is {} bottom is {}".format(edge, bottom))
-            print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomEdge, yaw))
-    
-        velocity.angular.z=0
-        velocity.linear.x=0
-        velocity.linear.y=0
-        pub.publish(velocity)
-        r.sleep()
+            print("finish")
 
-        snapshot_x = x_robot
-        snapshot_y = y_robot
-        print("Moving forward")
-        while ((x_robot-snapshot_x)**2 + (y_robot-snapshot_y)**2 < distance**2):
-            velocity.linear.x = 0.2
+            # ROTATE BACK
+            target_rad = (snapshot + 6) % 6 - 3
+            while abs(yaw - target_rad)>0.05:
+                command.angular.z = kp * (target_rad-yaw)
+                pub.publish(command)
+                r.sleep()
+                print("Edge is {} bottom is {}".format(edge, bottom))
+                print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomEdge, yaw))
+        
+            velocity.angular.z=0
+            velocity.linear.x=0
+            velocity.linear.y=0
             pub.publish(velocity)
             r.sleep()
 
-        velocity.angular.z=0
-        velocity.linear.x=0
-        velocity.linear.y=0
-        pub.publish(velocity)
-        r.sleep()
-        print("finish")
-
-        # ROTATE BACK
-        target_rad = (snapshot + 6) % 6 - 3
-        while abs(yaw - target_rad)>0.05:
-            command.angular.z = kp * (target_rad-yaw)
-            pub.publish(command)
+            break
+            print("This should never print")
+            velocity = Twist()
+            velocity.linear.x = 0.5
+            pub.publish(velocity)
             r.sleep()
-            print("Edge is {} bottom is {}".format(edge, bottom))
-            print("initial is {} target rad is {} and current is {}".format(snapshot, angleToBottomEdge, yaw))
-    
-        velocity.angular.z=0
-        velocity.linear.x=0
-        velocity.linear.y=0
-        pub.publish(velocity)
-        r.sleep()
-
-        break
-        print("This should never print")
-        velocity = Twist()
-        velocity.linear.x = 0.5
-        pub.publish(velocity)
-        r.sleep()
-
+            
+except KeyboardInterrupt:
+    velocity.angular.z=0
+    velocity.linear.x=0
+    velocity.linear.y=0
+    pub.publish(velocity)
+    r.sleep()
 
 # plan
 """
