@@ -2,12 +2,12 @@
 
 ### Jacob Laframboise, Jack Demeter, Jesse MacCormac, Daniella Ruisendaal, Anne Broughton
 
+This work was presented at the *Canadian Undergraduate Conference on Artificial Intelligence* 2020. This work was done with *QMIND -  Queen's AI Hub*.
 
-
-## Intro ##
+## Goals
 The QMIND DAIR Robotic Traversal Team works towards understanding and improving robotic traversal over terrain. We take a two pronged approach to traversability, by (I) modelling IMU sensor data as a Turtlebot3 robot traverses different terrains, and (II) by developing an autonomous pothole avoidance system on a Turtlebot3 robot.
 
-## I. Sensor data exploration
+## I. Sensor Data Exploration
 
 Using data recorded of a Turtlebot3 Waffle Pi driving over several different surfaces, we do exploratory data analysis to validate assumptions and learn the distribution of the sensor data. We then attempt to cluster and classify the data by which surface the robot was driving on. We use classical machine learning methods such as logistic regression, as well as deep learning methods such as LSTM networks to map the sensor data to which surface the robot is driving on. 
 
